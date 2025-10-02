@@ -1,18 +1,31 @@
 use colored::Colorize;
 use notify_rust::Notification;
+use std::env;
 use std::{
     io::{self, Write},
     thread,
     time::Duration,
 };
 fn main() {
-    let total_hours: f64 = read_user_input();
-    let remaining_time: i64 = (total_hours * 3600.0).round() as i64;
-    println!("\nStarting timer for {total_hours} hours: ");
-    display_notification(&format!("⏰ Starting timer for {} hours ", total_hours));
-    run_timer(remaining_time);
-    println!("\n{}", "Time's Up!!!".red());
-    display_notification(&format!("🔔 Time's Up!!!"));
+    let args: Vec<String> = env::args().collect();
+    let remaining_time: i64;
+    let total_hours: f64;
+    if args.len() == 2 {
+        match parse_input(&args[1]) {
+            Ok(num) => {
+                total_hours = num;
+                remaining_time = calculate_remaining_time(total_hours);
+                display_output(remaining_time, total_hours);
+            }
+            Err(err) => {
+                eprintln!("ERROR PARSING INPUT : {}", err.red());
+            }
+        }
+    } else {
+        total_hours = read_user_input();
+        remaining_time = calculate_remaining_time(total_hours);
+        display_output(remaining_time, total_hours);
+    }
 }
 
 // format time to get all its derivatives(h:m:s)
@@ -33,12 +46,10 @@ fn read_user_input() -> f64 {
             eprintln!("\n{}", "Failed to read input. Try again!!!".red());
             continue;
         }
-        match user_input.trim().parse::<f64>() {
-            Ok(num) if num > 0.0 => break num,
-            Ok(num) if num < 0.0 => eprintln!("{}\n", "lease enter a positive integer!!!".red()),
-            Ok(_) => eprintln!("{}\n", "Invalid input!!! Please enter a valid number".red()),
-            Err(_) => {
-                eprintln!("{}\n", "Invalid input!!! Please enter a valid number".red());
+        match parse_input(&user_input) {
+            Ok(num) => break num,
+            Err(err) => {
+                eprintln!("ERROR PARSING INPUT : {}", err.red());
             }
         }
     }
@@ -46,23 +57,44 @@ fn read_user_input() -> f64 {
 
 //start the timer
 fn run_timer(mut remaining_time: i64) {
-    while remaining_time > 0 {
+    while remaining_time >= 0 {
         print!(
             "\rTime Remaining : {}",
             format_time(&remaining_time).green()
         );
         io::stdout().flush().unwrap();
         thread::sleep(Duration::from_secs(1));
-        if remaining_time == 0 {
-            break;
-        }
         remaining_time -= 1;
     }
 }
+
+// display notification
 fn display_notification(message: &str) {
-    Notification::new()
-        .summary("Timer")
-        .body(message)
-        .show()
-        .unwrap();
+    if let Err(e) = Notification::new().summary("Timer").body(message).show() {
+        eprintln!("{} : {e}", "Failed to show notification".red());
+    }
+}
+
+//calculate remaining time in seconds
+fn calculate_remaining_time(input: f64) -> i64 {
+    (input * 3600.0).round() as i64
+}
+
+//displaying the output on the commandline
+fn display_output(remaining_time: i64, total_hours: f64) {
+    let unit = if total_hours == 1.0 { "hour" } else { "hours" };
+    println!("\nStarting timer for {total_hours} {unit}: ");
+    display_notification(&format!("⏰ Starting timer for {total_hours} hours "));
+    run_timer(remaining_time);
+    println!("\n{}", "Time's Up!!!".red());
+    display_notification("🔔 Time's Up!!!");
+}
+
+//parsing user input to float for inputs like 1.5hours etc
+fn parse_input(input: &str) -> Result<f64, String> {
+    match input.trim().parse::<f64>() {
+        Ok(num) if num > 0.0 => Ok(num),
+        Ok(_) => Err("Invalid input!!! Please enter a positive number".to_string()),
+        Err(_) => Err("Invalid input!!! Please enter a valid number".to_string()),
+    }
 }
