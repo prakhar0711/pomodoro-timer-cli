@@ -6,7 +6,7 @@ description = "A simple CLI Pomodoro timer with notifications"
 authors = ["Prakhar Pratyush <prakhar.pratyush8010@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/prakhar0711/pomodoro-timer-cli"
-
+readme="README_CRATES.md"
 [dependencies]
 colored ="3.0.0"
 notify-rust="4"
