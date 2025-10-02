@@ -1,6 +1,6 @@
 [package]
 name = "pomodoro-timer"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A simple CLI Pomodoro timer with notifications"
 authors = ["Prakhar Pratyush <prakhar.pratyush8010@gmail.com>"]
